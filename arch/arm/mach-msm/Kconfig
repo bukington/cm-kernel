@@ -165,6 +165,13 @@ endchoice
 
 menu "Qualcomm MSM Board Type"
 
+config MACH_GALAXY
+	depends on ARCH_MSM
+	depends on ARCH_MSM7X00A
+	bool "Galaxy Board (GT-I7500)"
+	help
+	  Support for the Samsung GT_I7500 board.
+
 config MACH_HALIBUT
 	depends on ARCH_MSM
 	depends on ARCH_MSM7X00A
