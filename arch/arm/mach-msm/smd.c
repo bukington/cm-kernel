@@ -1129,6 +1129,9 @@ static int __devinit msm_smd_probe(struct platform_device *pdev)
 {
 	pr_info("smd_init()\n");
 
+  proc_comm_boot_wait();
+
+
 	INIT_WORK(&probe_work, smd_channel_probe_worker);
 
 	if (smd_core_init()) {
