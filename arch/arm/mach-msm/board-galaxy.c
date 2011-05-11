@@ -674,7 +674,7 @@ static struct platform_device *devices[] __initdata = {
 
 	&android_pmem_device,
 	&android_pmem_adsp_device,
-	&android_pmem_camera_device,
+	//&android_pmem_camera_device,
 
 	&hw3d_device,
 	&msm_fb_device,
