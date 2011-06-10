@@ -289,12 +289,11 @@ int sharp_gp2ap002_enable(int enable, enum gp2ap_mod mode)
 			//			input_sync(sharp_psensor.input_dev);
 
 			enable_irq(gpio_to_irq(GPIO_PROX_IRQ));
-			set_irq_wake(gpio_to_irq(GPIO_PROX_IRQ), sensor_mode);
 		} else {
 			PDBG("[GP2AP002] set_irq_wake off\n");
 			disable_irq(gpio_to_irq(GPIO_PROX_IRQ));
-			set_irq_wake(gpio_to_irq(GPIO_PROX_IRQ), sensor_mode);
 		}
+		set_irq_wake(gpio_to_irq(GPIO_PROX_IRQ), prox_is_enable != 0);
 	}
 
 	atomic_set(&s_sensor_mode, new_mode);
