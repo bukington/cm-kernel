@@ -51,7 +51,6 @@ DEFINE_MUTEX(hlist_mut);
 #define ERR_COPY_TO_USER() ERR_USER_COPY(1)
 
 struct msm_control_device *g_ctrl_pmsm = NULL;
-struct msm_sync *g_sync = NULL;
 DECLARE_MUTEX(ctrl_pmsm_lock);
 
 enum msm_camera_flash_t {
@@ -1784,8 +1783,6 @@ static int msm_get_pic(struct msm_sync *sync, void __user *arg)
 	unsigned long end;
 	int cline_mask;
 
-	sync = g_sync;
-
 	if (copy_from_user(&ctrlcmd_old,
 				arg,
 				sizeof(struct msm_ctrl_cmd_old))) {
@@ -2384,8 +2381,6 @@ static unsigned int __msm_poll_frame(struct msm_sync *sync,
 	int rc = 0;
 	unsigned long flags;
 
-	sync = g_sync;
-
 	poll_wait(filep, &sync->frame_q.wait, pll_table);
 	printk("__msm_poll_frame: poll received\n");
 
@@ -2407,6 +2402,14 @@ static unsigned int msm_poll_frame(struct file *filep,
 	struct poll_table_struct *pll_table)
 {
 	struct msm_device *pmsm = filep->private_data;
+	return __msm_poll_frame(pmsm->sync, filep, pll_table);
+}
+
+static unsigned int msm_poll_frame_ctrl(struct file *filep,
+	struct poll_table_struct *pll_table)
+{
+	struct msm_control_device *ctrl_pmsm = filep->private_data;
+	struct msm_device *pmsm = ctrl_pmsm->pmsm;
 	return __msm_poll_frame(pmsm->sync, filep, pll_table);
 }
 
@@ -2735,7 +2738,7 @@ static const struct file_operations msm_fops_control = {
 	.open = msm_open_control,
 	.unlocked_ioctl = msm_ioctl_control,
 	.release = msm_release_control,
-	.poll = msm_poll_frame,
+	.poll = msm_poll_frame_ctrl,
 };
 
 static const struct file_operations msm_fops_frame = {
@@ -2989,7 +2992,6 @@ static int msm_sync_init(struct msm_sync *sync,
 	msm_queue_init(&sync->event_q, "event");
 	msm_queue_init(&sync->frame_q, "frame");
 	msm_queue_init(&sync->pict_q, "pict");
-	g_sync = sync;
 
 	wake_lock_init(&sync->wake_suspend_lock, WAKE_LOCK_SUSPEND, "msm_camera_wake");
 	wake_lock_init(&sync->wake_lock, WAKE_LOCK_IDLE, "msm_camera");
