@@ -559,7 +559,6 @@ static int msm_get_frame(struct msm_sync *sync, void __user *arg)
 {
 	int rc = 0;
 	struct msm_frame frame;
-	printk("msm_get_frame: sync %p\n", sync);
 
 	if (copy_from_user(&frame,
 				arg,
@@ -591,7 +590,7 @@ static int msm_get_frame(struct msm_sync *sync, void __user *arg)
 		}
 	}
 
-	printk("msm_get_frame: sending frame to user\n");
+	CDBG("msm_get_frame: sending frame to user\n");
 	if (copy_to_user((void *)arg,
 				&frame, sizeof(struct msm_frame))) {
 		ERR_COPY_TO_USER();
@@ -617,7 +616,7 @@ static int msm_enable_vfe(struct msm_sync *sync, void __user *arg)
 	}
 
 	strncpy(cfg.name, cfg_old.name, cfg_old.length);
-	printk("msm_enable_vfe: name %s\n", cfg.name);
+	CDBG("msm_enable_vfe: name %s\n", cfg.name);
 
 	if (sync->vfefn.vfe_enable)
 		rc = sync->vfefn.vfe_enable(&cfg);
@@ -653,7 +652,6 @@ static struct msm_queue_cmd *__msm_control(struct msm_sync *sync,
 		struct msm_queue_cmd *qcmd,
 		int timeout)
 {
-	printk("__msm_control: enter\n");
 	int rc;
 
 	msm_enqueue(&sync->event_q, &qcmd->list_config);
@@ -661,15 +659,15 @@ static struct msm_queue_cmd *__msm_control(struct msm_sync *sync,
 	if (!queue)
 		return NULL;
 
-	printk("__msm_control: wait for event on queue %s (%p)\n", queue->name, queue);
+	CDBG("__msm_control: wait for event on queue %s (%p)\n", queue->name, queue);
 
 	/* wait for config status */
 	rc = wait_event_interruptible_timeout(
 			queue->wait,
 			!list_empty_careful(&queue->list),
 			timeout);
-	printk("__msm_control: event interruptible\n");
-	printk("__msm_control: list_empty_careful %s\n", list_empty_careful(&queue->list) ? "true" : "false");
+	CDBG("__msm_control: event interruptible\n");
+	CDBG("__msm_control: list_empty_careful %s\n", list_empty_careful(&queue->list) ? "true" : "false");
 	if (list_empty_careful(&queue->list)) {
 		if (!rc)
 			rc = -ETIMEDOUT;
@@ -684,11 +682,11 @@ static struct msm_queue_cmd *__msm_control(struct msm_sync *sync,
 			return ERR_PTR(rc);
 		}
 	}
-	printk("__msm_control: dequeue\n");
+	CDBG("__msm_control: dequeue\n");
 
 	qcmd = msm_dequeue(queue, list_control);
 	//BUG_ON(!qcmd);
-	printk("__msm_control: dequeued %p from %s (%p)\n", qcmd, queue->name, queue);
+	CDBG("__msm_control: dequeued %p from %s (%p)\n", qcmd, queue->name, queue);
 
 	return qcmd;
 }
@@ -732,7 +730,7 @@ static int msm_control(struct msm_control_device *ctrl_pmsm,
 			void __user *arg)
 {
 	int rc = 0;
-	printk("msm_control: enter\n");
+	CDBG("msm_control: enter\n");
 
 	struct msm_sync *sync = ctrl_pmsm->pmsm->sync;
 	void __user *uptr;
@@ -754,7 +752,7 @@ static int msm_control(struct msm_control_device *ctrl_pmsm,
 	udata.status = tmpudata.status;
 	udata.value = tmpudata.value;
 
-	printk("msm_control: tmpudata: %d/%d/%d\n", tmpudata.type, tmpudata.length, tmpudata.status);
+	CDBG("msm_control: tmpudata: %d/%d/%d\n", tmpudata.type, tmpudata.length, tmpudata.status);
 
 	uptr = udata.value;
 	udata.value = data;
@@ -788,7 +786,7 @@ static int msm_control(struct msm_control_device *ctrl_pmsm,
 				  &ctrl_pmsm->ctrl_q,
 				  &qcmd, MAX_SCHEDULE_TIMEOUT);
 
-	printk("msm_control: get response\n");
+	CDBG("msm_control: get response\n");
 	if (!qcmd_resp || IS_ERR(qcmd_resp)) {
 		/* Do not free qcmd_resp here.  If the config thread read it,
 		 * then it has already been freed, and we timed out because
@@ -1062,7 +1060,7 @@ static int msm_get_stats(struct msm_sync *sync, void __user *arg)
 
 	case MSM_CAM_Q_CTRL:
 		/* control command from control thread */
-		printk("MSM_CAM_Q_CTRL\n");
+		CDBG("MSM_CAM_Q_CTRL\n");
 		ctrl = (struct msm_ctrl_cmd *)(qcmd->command);
 
 		CDBG("%s: qcmd->type %d length %d\n", __func__,
@@ -1081,7 +1079,7 @@ static int msm_get_stats(struct msm_sync *sync, void __user *arg)
 		se.resptype = MSM_CAM_RESP_CTRL;
 
 		/* what to control */
-		printk("MSM_CAM_Q_CTRL: ctrl->type %d, ctrl->length %d\n", ctrl->type, ctrl->length);
+		CDBG("MSM_CAM_Q_CTRL: ctrl->type %d, ctrl->length %d\n", ctrl->type, ctrl->length);
 		se.ctrl_cmd.type = ctrl->type;
 		se.ctrl_cmd.length = ctrl->length;
 		//se.ctrl_cmd.resp_fd = ctrl->resp_fd;
@@ -1143,7 +1141,7 @@ static int msm_ctrl_cmd_done(struct msm_control_device *ctrl_pmsm,
 		return -EFAULT;
 	}
 
-	printk("msm_ctrl_cmd_done: %d/%d/%d/%d/%p\n", command_old.type, command_old.length, command_old.timeout_ms, command_old.status, command_old.value);
+	CDBG("msm_ctrl_cmd_done: %d/%d/%d/%d/%p\n", command_old.type, command_old.length, command_old.timeout_ms, command_old.status, command_old.value);
 	
 	command->type = command_old.type;
 	command->length = command_old.length;
@@ -1679,47 +1677,42 @@ static int msm_axi_config(struct msm_sync *sync, void __user *arg)
 	return 0;
 }
 
-#if 1//PGH TEMP
 static int msm_camera_pict_snapshot_pending(struct msm_sync *sync)
 {
-   unsigned long flags;
-    int yes = 0;
+	unsigned long flags;
+	int yes = 0;
 
-#if 1 //PJY : temporally blocked
 	struct msm_device_queue *__q = (&sync->pict_q);
+	struct msm_queue_cmd *qcmd = NULL;
 
-        struct msm_queue_cmd *qcmd = NULL;
 re_pending:
- spin_lock_irqsave(&__q->lock, flags);
+	spin_lock_irqsave(&__q->lock, flags);
 
-        if (!list_empty(&__q->list)) {
+	if (!list_empty(&__q->list)) {
 
-                qcmd =
-                  list_first_entry(&__q->list,
-                               struct msm_queue_cmd, list_pict );
-          CDBG("qcmd->type = %d\n",qcmd->type);
+		qcmd = list_first_entry(&__q->list,
+				struct msm_queue_cmd, list_pict );
+		CDBG("qcmd->type = %d\n",qcmd->type);
 
-                if (qcmd) {
-                     if (qcmd->type  == MSM_CAM_Q_VFE_MSG)
-                           yes = 1;
-                } else {
-                        m4mo_i2c_write_8bit_external(0x0C, 0x05, 0x01);
-         }
-       } else {
-        //      CDBG("msm_sync.pict_frame_q list is empty\n");
-  }
-       spin_unlock_irqrestore(&__q->lock, flags);
-    if(!yes) {
-              m4mo_i2c_write_8bit_external(0x0C, 0x05, 0x01);
-         msleep(10);
-             goto re_pending;
-        }
-#endif
+		if (qcmd) {
+			if (qcmd->type  == MSM_CAM_Q_VFE_MSG)
+				yes = 1;
+		} else {
+			m4mo_i2c_write_8bit_external(0x0C, 0x05, 0x01);
+		}
+	} else {
+		printk("msm_sync.pict_frame_q list is empty\n");
+	}
+	spin_unlock_irqrestore(&__q->lock, flags);
+	if (!yes) {
+		m4mo_i2c_write_8bit_external(0x0C, 0x05, 0x01);
+		msleep(10);
+		goto re_pending;
+	}
 
-        CDBG("msm_camera_pict_pending, yes = %d\n", yes);
-       return yes;
+	printk("msm_camera_pict_pending, yes = %d\n", yes);
+	return yes;
 }
-#endif//PGH TEMP
 
 static int __msm_get_pic(struct msm_sync *sync, struct msm_ctrl_cmd *ctrl)
 {
@@ -1730,7 +1723,7 @@ static int __msm_get_pic(struct msm_sync *sync, struct msm_ctrl_cmd *ctrl)
 
 	tm = (int)ctrl->timeout_ms;
 
-	printk("__msm_get_pic: wait for event\n");
+	CDBG("__msm_get_pic: wait for event\n");
 	rc = wait_event_interruptible_timeout(
 			sync->pict_q.wait,
 			//!list_empty_careful(&sync->pict_q.list),
@@ -2146,7 +2139,7 @@ static long msm_ioctl_frame(struct file *filep, unsigned int cmd,
 	void __user *argp = (void __user *)arg;
 	struct msm_device *pmsm = filep->private_data;
 
-	printk("msm_ioctl_frame: enter\n");
+	CDBG("msm_ioctl_frame: enter\n");
 
 	switch (cmd) {
 	case MSM_CAM_IOCTL_GETFRAME:
@@ -2176,13 +2169,13 @@ static long msm_ioctl_control(struct file *filep, unsigned int cmd,
 	void __user *argp = (void __user *)arg;
 	struct msm_control_device *ctrl_pmsm = filep->private_data;
 	struct msm_device *pmsm = ctrl_pmsm->pmsm;
-	printk("msm_ioctl_control: enter, cmd: %d\n", _IOC_NR(cmd));
+	CDBG("msm_ioctl_control: enter, cmd: %d\n", _IOC_NR(cmd));
 
 	switch (cmd) {
 	case MSM_CAM_IOCTL_CTRL_COMMAND:
 		/* Coming from control thread, may need to wait for
 		 * command status */
-		printk("MSM_CAM_IOCTL_CTRL_COMMAND ioctl\n");
+		CDBG("MSM_CAM_IOCTL_CTRL_COMMAND ioctl\n");
 		g_ctrl_pmsm = ctrl_pmsm;
 		rc = msm_control(ctrl_pmsm, 1, argp);
 		break;
@@ -2233,22 +2226,22 @@ static long msm_ioctl_control(struct file *filep, unsigned int cmd,
 		break;
 #endif
 	case MSM_CAM_IOCTL_GETFRAME:
-		printk("MSM_CAM_IOCTL_GETFRAME\n");
+		CDBG("MSM_CAM_IOCTL_GETFRAME\n");
 		/* Coming from frame thread to get frame
 		 * after SELECT is done */
 		rc = msm_get_frame(pmsm->sync, argp);
 		break;
 	case MSM_CAM_IOCTL_RELEASE_FRAME_BUFFER:
-		printk("MSM_CAM_IOCTL_RELEASE_FRAME_BUFFER\n");
+		CDBG("MSM_CAM_IOCTL_RELEASE_FRAME_BUFFER\n");
 		rc = msm_put_frame_buffer(pmsm->sync, argp);
 		break;
 	case MSM_CAM_IOCTL_UNBLOCK_POLL_FRAME:
-		printk("MSM_CAM_IOCTL_UNBLOCK_POLL_FRAME\n");
+		CDBG("MSM_CAM_IOCTL_UNBLOCK_POLL_FRAME\n");
 		rc = msm_unblock_poll_frame(pmsm->sync);
 		break;
 
 	default:
-		printk("##Unknow control IOCTL cmd %d\n", _IOC_NR(cmd));
+		printk(KERN_ERR "##Unknow control IOCTL cmd %d\n", _IOC_NR(cmd));
 		rc = msm_ioctl_common(pmsm, cmd, argp);
 		break;
 	}
@@ -2382,7 +2375,7 @@ static unsigned int __msm_poll_frame(struct msm_sync *sync,
 	unsigned long flags;
 
 	poll_wait(filep, &sync->frame_q.wait, pll_table);
-	printk("__msm_poll_frame: poll received\n");
+	CDBG("__msm_poll_frame: poll received\n");
 
 	spin_lock_irqsave(&sync->frame_q.lock, flags);
 	if (!list_empty_careful(&sync->frame_q.list))
@@ -2455,7 +2448,7 @@ static void msm_vfe_sync(struct msm_vfe_resp *vdata,
 	struct msm_queue_cmd *qcmd = NULL;
 	struct msm_sync *sync = (struct msm_sync *)syncdata;
 
-	printk("msm_vfe_sync: enter\n");
+	CDBG("msm_vfe_sync: enter\n");
 
 	if (!sync) {
 		pr_err("%s: no context in dsp callback.\n", __func__);
