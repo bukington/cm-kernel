@@ -2093,9 +2093,25 @@ static long msm_ioctl_config(struct file *filep, unsigned int cmd,
 		break;
 
 	case MSM_CAM_IOCTL_SENSOR_IO_CFG:
+	{
+		struct sensor_cfg_data_old cfg_data;
+		// Temp patch that empty pict_q when switching to snapshot mode
+		if (copy_from_user(
+				&cfg_data,
+				(void *)argp,
+				sizeof(struct sensor_cfg_data_old)))
+			return -EFAULT;
+		if (cfg_data.cfgtype == CFG_SET_MODE_OLD && cfg_data.mode == SENSOR_SNAPSHOT_MODE_OLD) {
+			// empty any previous frame
+			while (!list_empty(&pmsm->sync->pict_q.list)) {
+				printk("Purging pending snapshot\n");
+				msm_dequeue(&pmsm->sync->pict_q, list_pict);
+			}
+		}
+		//
 		rc = pmsm->sync->sctrl.s_config(argp);
 		break;
-
+	}
 	case MSM_CAM_IOCTL_FLASH_LED_CFG: {
 		uint32_t led_state;
 		if (copy_from_user(&led_state, argp, sizeof(led_state))) {
