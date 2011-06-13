@@ -481,6 +481,10 @@ int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
 		/* Erase init depends on CSD and SSR */
 		mmc_init_erase(card);
 
+#ifdef CONFIG_MACH_GALAXY
+		printk("%s: Delay 250 ms\n", __func__);
+		msleep(250);
+#endif
 		/*
 		 * Fetch switch information from card.
 		 */
