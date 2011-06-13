@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Linux kernel version: 2.6.35.10
-# Wed May 11 22:58:56 2011
+# Mon Jun 13 08:36:40 2011
 #
 CONFIG_ARM=y
 CONFIG_SYS_SUPPORTS_APM_EMULATION=y
@@ -409,7 +409,7 @@ CONFIG_ALIGNMENT_TRAP=y
 #
 CONFIG_ZBOOT_ROM_TEXT=0x0
 CONFIG_ZBOOT_ROM_BSS=0x0
-CONFIG_CMDLINE="console=ttyDCC0 loglevel=7 no_console_suspend=1"
+CONFIG_CMDLINE="console=ttyDCC0 loglevel=7 no_console_suspend=1 lpj=2637824"
 CONFIG_CMDLINE_FORCE=y
 # CONFIG_XIP_KERNEL is not set
 # CONFIG_KEXEC is not set
