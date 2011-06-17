@@ -71,14 +71,6 @@ static struct android_pmem_platform_data android_pmem_pdata = {
 	.cached = 1,
 };
 
-static struct android_pmem_platform_data android_pmem_camera_pdata = {
-	.name = "pmem_camera",
-	.start = MSM_PMEM_CAMERA_BASE,
-	.size = MSM_PMEM_CAMERA_SIZE,
-	.no_allocator = 0,
-	.cached = 1,
-};
-
 static struct android_pmem_platform_data android_pmem_adsp_pdata = {
 	.name = "pmem_adsp",
 	.start = MSM_PMEM_ADSP_BASE,
@@ -98,12 +90,6 @@ static struct platform_device android_pmem_adsp_device = {
 	.name = "android_pmem",
 	.id = 1,
 	.dev = { .platform_data = &android_pmem_adsp_pdata },
-};
-
-static struct platform_device android_pmem_camera_device = {
-	.name = "android_pmem",
-	.id = 2,
-	.dev = { .platform_data = &android_pmem_camera_pdata },
 };
 
 static struct resource ram_console_resource[] = {
@@ -652,6 +638,63 @@ static uint32_t camera_on_gpio_table[] = {
 	PCOM_GPIO_CFG(61, 0, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_2MA),
 };
 
+static void config_camera_on_gpios(void)
+{
+	printk("%s: enter\n", __func__);
+	config_gpio_table(camera_on_gpio_table,
+		ARRAY_SIZE(camera_on_gpio_table));
+}
+
+static void config_camera_off_gpios(void)
+{
+	printk("%s: enter\n", __func__);
+	config_gpio_table(camera_off_gpio_table,
+		ARRAY_SIZE(camera_off_gpio_table));
+}
+
+static struct msm_camera_device_platform_data msm_camera_device_data = {
+	.camera_gpio_on  = config_camera_on_gpios,
+	.camera_gpio_off = config_camera_off_gpios,
+	.ioext.mdcphy = MSM_MDC_PHYS,
+	.ioext.mdcsz  = MSM_MDC_SIZE,
+	.ioext.appphy = MSM_CLK_CTL_PHYS,
+	.ioext.appsz  = MSM_CLK_CTL_SIZE,
+};
+
+static struct msm_camera_sensor_info msm_camera_sensor[1] = {
+	{
+		.sensor_reset = 17,
+		.sensor_pwd	  = 85,
+		.vcm_pwd      = 0,
+		.sensor_name  = "m4mo",
+		.flash_type		= MSM_CAMERA_FLASH_NONE,
+		.pdata      = &msm_camera_device_data,
+	},
+/*	{
+		.sensor_reset   = 89,
+		.sensor_pwd	  = 85,
+		.vcm_pwd      = 0,
+		.sensor_name  = "mt9t013",
+		.flash_type		= MSM_CAMERA_FLASH_NONE,
+		.pdata      = &msm_camera_device_data,
+	},*/
+};
+
+
+static struct platform_device msm_camera_sensor_m4mo = {
+	.name   = "msm_camera_m4mo",
+	.dev    = {
+		.platform_data = &msm_camera_sensor[0],
+	},
+};
+
+/*static struct platform_device msm_camera_sensor_mt9t013 = {
+	.name   = "msm_camera_mt9t013",
+	.dev    = {
+		.platform_data = &msm_camera_sensor[1],
+	},
+};*/
+
 static struct platform_device *devices[] __initdata = {
 	//&bcm_bt_lpm_device,
 	// &msm_device_uart1,
@@ -680,6 +723,7 @@ static struct platform_device *devices[] __initdata = {
 	&cam_i2c_bus,
 	&cam_pm_i2c_bus,
 
+	&msm_camera_sensor_m4mo,
 };
 
 extern struct sys_timer msm_timer;
@@ -761,6 +805,7 @@ static void __init galaxy_init(void)
 #endif
 
 	//msm_fb_add_devices();
+	config_camera_off_gpios();
 
 	msm_device_uart_dm1.dev.platform_data = NULL;
 
