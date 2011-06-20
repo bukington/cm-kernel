@@ -1,44 +1,45 @@
 #include <linux/delay.h>
 #include <linux/err.h>
-#include <asm/gpio.h>
-#include <asm/mach/mmc.h>
-#include <mach/vreg.h>
-#include <linux/platform_device.h>
+#include <linux/mmc/host.h>
 #include <linux/mmc/sdio_ids.h>
+#include <linux/platform_device.h>
+#include <linux/gpio.h>
+
+#include <mach/board.h>
+#include <mach/mmc.h>
+#include <mach/vreg.h>
 
 #include "proc_comm.h"
+#include "devices.h"
 #include "board-galaxy.h"
-
-int __init msm_add_sdcc(unsigned int controller, struct mmc_platform_data *plat,
-						unsigned int stat_irq, unsigned long stat_irq_flags);
 
 static unsigned sdcc_cfg_data[][6] = {
 	/* SDC1 configs */
 	{
-	GPIO_CFG(51, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_4MA),
-	GPIO_CFG(52, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_4MA),
-	GPIO_CFG(53, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_4MA),
-	GPIO_CFG(54, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_4MA),
-	GPIO_CFG(55, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_4MA),
-	GPIO_CFG(56, 1, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_4MA),
+	PCOM_GPIO_CFG(51, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_4MA),
+	PCOM_GPIO_CFG(52, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_4MA),
+	PCOM_GPIO_CFG(53, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_4MA),
+	PCOM_GPIO_CFG(54, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_4MA),
+	PCOM_GPIO_CFG(55, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_4MA),
+	PCOM_GPIO_CFG(56, 1, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_4MA),
 	},
 	/* SDC2 configs */
 	{
-	GPIO_CFG(62, 2, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_8MA),
-	GPIO_CFG(63, 2, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
-	GPIO_CFG(64, 2, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
-	GPIO_CFG(65, 2, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
-	GPIO_CFG(66, 2, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
-	GPIO_CFG(67, 2, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(62, 2, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_8MA),
+	PCOM_GPIO_CFG(63, 2, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(64, 2, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(65, 2, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(66, 2, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(67, 2, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
 	},
 	{
 	/* SDC3 configs */
-	GPIO_CFG(88, 1, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_8MA),
-	GPIO_CFG(89, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
-	GPIO_CFG(90, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
-	GPIO_CFG(91, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
-	GPIO_CFG(92, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
-	GPIO_CFG(93, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(88, 1, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_8MA),
+	PCOM_GPIO_CFG(89, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(90, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(91, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(92, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
+	PCOM_GPIO_CFG(93, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_8MA),
 	},
 };
 
@@ -64,8 +65,9 @@ static void msm_sdcc_setup_gpio(int dev_id, unsigned int enable)
 	}
 
 	for (i = 0; i < ARRAY_SIZE(sdcc_cfg_data[dev_id - 1]); i++) {
-		rc = gpio_tlmm_config(sdcc_cfg_data[dev_id - 1][i],
-			enable ? GPIO_ENABLE : GPIO_DISABLE);
+		unsigned disabled = enable ? GPIO_ENABLE : GPIO_DISABLE;
+		rc = msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &sdcc_cfg_data[dev_id - 1][i],
+			&disabled);
 		if (rc) {
 			printk(KERN_ERR "%s: gpio_tlmm_config(%#x)=%d\n",
 				__func__, sdcc_cfg_data[dev_id - 1][i], rc);
@@ -141,15 +143,21 @@ static unsigned int galaxy_sdcc_slot_status(struct device *dev)
 	return !status;
 }
 
-static struct mmc_platform_data galaxy_sdcc_data = {
+static unsigned int galaxy_sdslot_type = MMC_TYPE_SD;
+
+static struct msm_mmc_platform_data galaxy_sdcc_data = {
 	.ocr_mask	= MMC_VDD_28_29,
 	.translate_vdd	= msm_sdcc_setup_power,
 	.status         = galaxy_sdcc_slot_status,
+	.slot_type      = &galaxy_sdslot_type,
 };
 
-static struct mmc_platform_data movinand_sdcc_data = {
+static unsigned int galaxy_mmc_type = MMC_TYPE_MMC;
+
+static struct msm_mmc_platform_data movinand_sdcc_data = {
 	.ocr_mask	= MMC_VDD_30_31,
 	.translate_vdd	= galaxy_movinand_setup_power,
+	.slot_type      = &galaxy_mmc_type,
 };
 
 static uint32_t wifi_on_gpio_table[] = {			// needed to set GPIO. but...
@@ -201,7 +209,7 @@ static int wifi_status_register(void (*callback)(int card_present, void *dev_id)
 	return 0;
 }
 
-static struct mmc_platform_data wifi_data = {
+static struct msm_mmc_platform_data wifi_data = {
 	.ocr_mask	= MMC_VDD_28_29,
 	.status		= wifi_status,
 	.register_status_notify	= wifi_status_register,
