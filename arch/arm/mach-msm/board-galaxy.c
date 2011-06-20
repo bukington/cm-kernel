@@ -54,8 +54,6 @@
 #include <linux/android_pmem.h>
 #include <linux/usb/android_composite.h>
 
-#include <linux/fsa9480.h>
-
 #include "devices.h"
 #include "board-galaxy.h"
 #include "proc_comm.h"
@@ -167,22 +165,12 @@ static struct platform_device amp_i2c_bus = {
         .dev.platform_data = &amp_i2c_pdata,
 };
 
-static void fsa9480_attached_callback(u8 attached) {
-	pr_info("fsa9480_attached_callback: %d", attached);
-}
-
-static struct fsa9480_platform_data fsa9480_data = {
-	.usb_cb = fsa9480_attached_callback,
-};
-
-
 static struct i2c_board_info amp_i2c_devices[] = {
 	{
 		I2C_BOARD_INFO("max9877", 0x9A >> 1),
 	},
 	{
 		I2C_BOARD_INFO("fsa9480", 0x4A >> 1),
-		.platform_data = &fsa9480_data,
 	},
 };
 
@@ -556,13 +544,6 @@ void __init msm_add_usb_devices(void)
 }
 
 
-static void __init msm_fb_add_devices(void)
-{
-	msm_register_device(&msm_device_mdp, &mdp_data);
-	msm_register_device(&msm_device_mddi0, &mddi_data);
-	//msm_fb_register_device("emdh", &mddi_pdata);
-}
-
 static uint32_t new_board_gpio_table[] = {
 	PCOM_GPIO_CFG(GPIO_SEND_END,  0, GPIO_INPUT, GPIO_PULL_UP, GPIO_2MA), /* SEND_END */
 //	PCOM_GPIO_CFG(GPIO_FLASH_DETECT,  0, GPIO_INPUT, GPIO_NO_PULL, GPIO_2MA), /* T_FLASH_DET */
@@ -677,7 +658,6 @@ static struct platform_device *devices[] __initdata = {
 	//&android_pmem_camera_device,
 
 	&hw3d_device,
-	&msm_fb_device,
 	&galaxy_snd,
 	&galaxy_rfkill,
 
@@ -769,8 +749,6 @@ static void __init galaxy_init(void)
 	msm_device_uart_dm1.dev.platform_data = &msm_uart_dm1_pdata;
 #endif
 
-	//msm_fb_add_devices();
-
 	msm_device_uart_dm1.dev.platform_data = NULL;
 
 	config_gpio_table(new_board_gpio_table, ARRAY_SIZE(new_board_gpio_table));
@@ -785,7 +763,6 @@ static void __init galaxy_fixup(struct machine_desc *desc, struct tag *tags,
 {
 	mi->nr_banks = 1;
 	mi->bank[0].start = PHYS_OFFSET;
-	mi->bank[0].node = PHYS_TO_NID(PHYS_OFFSET);
 	mi->bank[0].size = MSM_LINUX_SIZE;
 }
 
