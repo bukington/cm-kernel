@@ -41,6 +41,11 @@
 #define DPRINTK(x...)        /* !!!! */
 #endif
 
+static void gpio_tlmm_config(uint32_t config, int disabled) {
+	msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &config, disabled);
+}
+
+
 #define MAX_ABS_X  383
 #define MAX_ABS_Y  511
 
@@ -88,14 +93,14 @@ static void melfas_ts_hw_i2c_mode(int on) // 0: OFF, 1: ON
 {
     if(on)
     {
-      gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SCL_F, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);
-      gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SDA_F, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);
+      gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SCL_F, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);
+      gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SDA_F, 1, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);
 	}
 	else
 	{
-      gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SCL_F, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_16MA),GPIO_ENABLE);
+      gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SCL_F, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_16MA),GPIO_ENABLE);
 	  gpio_set_value(TOUCH_I2C_SCL_F, 0);
-      gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_16MA),GPIO_ENABLE);
+      gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_16MA),GPIO_ENABLE);
 	  gpio_set_value(TOUCH_I2C_SDA_F, 0);
 	}
 }
@@ -104,11 +109,11 @@ static void melfas_ts_int_mode(int on)  // 0: OFF, 1: ON
 {
     if(on)
     {
-	  gpio_tlmm_config(GPIO_CFG(TOUCH_INT, 0, GPIO_INPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);		
+	  gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_INT, 0, GPIO_INPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);		
     }
 	else
 	{
-      gpio_tlmm_config(GPIO_CFG(TOUCH_INT, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA),GPIO_ENABLE);		
+      gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_INT, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_2MA),GPIO_ENABLE);		
 	  gpio_set_value(TOUCH_INT, 0);
     }
 }
@@ -198,7 +203,7 @@ static int _i2c_read_( uint8_t slave_addr, uint8_t *pData)
     i2c_write_byte( (slave_addr<<1)|1 );
 
     // CHKECK ACK
-	gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_INPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);
+	gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_INPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);
 	gpio_set_value(TOUCH_I2C_SCL_F, 1);  
 	bRet = gpio_get_value(TOUCH_I2C_SDA_F);	
 	gpio_set_value(TOUCH_I2C_SCL_F, 0); 
@@ -211,7 +216,7 @@ static int _i2c_read_( uint8_t slave_addr, uint8_t *pData)
     i2c_read_byte( pData );
 
     // SEND NAK
-    gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_16MA),GPIO_ENABLE);
+    gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_16MA),GPIO_ENABLE);
 	gpio_set_value(TOUCH_I2C_SDA_F, 1);
 	gpio_set_value(TOUCH_I2C_SCL_F, 1);     
 	gpio_set_value(TOUCH_I2C_SCL_F, 0);     
@@ -245,11 +250,11 @@ static int _i2c_write_(uint8_t slave_addr, uint8_t data)
     i2c_write_byte( (slave_addr<<1)|0 );
 
     // CHKECK ACK
-	gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_INPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);
+	gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_INPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);
 	gpio_set_value(TOUCH_I2C_SCL_F, 1);  
 	bRet = gpio_get_value(TOUCH_I2C_SDA_F);	
 	gpio_set_value(TOUCH_I2C_SCL_F, 0); 
-    gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_16MA),GPIO_ENABLE);	
+    gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_16MA),GPIO_ENABLE);	
 
 	if( bRet )
     	return 0;
@@ -257,11 +262,11 @@ static int _i2c_write_(uint8_t slave_addr, uint8_t data)
 	i2c_write_byte(data);
 
     // CHKECK ACK
-	gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_INPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);
+	gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_INPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);
 	gpio_set_value(TOUCH_I2C_SCL_F, 1);  
 	bRet = gpio_get_value(TOUCH_I2C_SDA_F);	
 	gpio_set_value(TOUCH_I2C_SCL_F, 0); 
-    gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_16MA),GPIO_ENABLE);	
+    gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_OUTPUT, GPIO_NO_PULL, GPIO_16MA),GPIO_ENABLE);	
 
     // STOP
 	gpio_set_value(TOUCH_I2C_SDA_F, 0);  
@@ -1098,11 +1103,11 @@ static void melfas_tsp_init(void)
 	printk(KERN_INFO "melfas_tsp_esd_init because of esd recovery\n");
 
 	// TOUCH OFF
-	gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SCL_F, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_16MA),GPIO_ENABLE);
+	gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SCL_F, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_16MA),GPIO_ENABLE);
 	gpio_set_value(TOUCH_I2C_SCL_F, 0);
-	gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_16MA),GPIO_ENABLE);
+	gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_16MA),GPIO_ENABLE);
 	gpio_set_value(TOUCH_I2C_SDA_F, 0);
-	gpio_tlmm_config(GPIO_CFG(TOUCH_INT, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_16MA),GPIO_ENABLE);
+	gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_INT, 0, GPIO_OUTPUT, GPIO_PULL_DOWN, GPIO_16MA),GPIO_ENABLE);
 	gpio_set_value(TOUCH_INT, 0);
 
 	gpio_direction_output(TOUCH_EN, 0);  // TOUCH EN
@@ -1118,11 +1123,11 @@ static void melfas_tsp_init(void)
 		printk(KERN_ERR "can not enable gp3\n");
 	gpio_direction_output(TOUCH_EN, 1);  // TOUCH EN
 
-	gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SCL_F, 0, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_16MA),GPIO_ENABLE);
+	gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SCL_F, 0, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_16MA),GPIO_ENABLE);
 	gpio_set_value(TOUCH_I2C_SCL_F, 1);
-	gpio_tlmm_config(GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_16MA),GPIO_ENABLE);
+	gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_I2C_SDA_F, 0, GPIO_OUTPUT, GPIO_PULL_UP, GPIO_16MA),GPIO_ENABLE);
 	gpio_set_value(TOUCH_I2C_SDA_F, 1);
-	gpio_tlmm_config(GPIO_CFG(TOUCH_INT, 0, GPIO_INPUT, GPIO_PULL_UP, GPIO_16MA),GPIO_ENABLE);
+	gpio_tlmm_config(PCOM_GPIO_CFG(TOUCH_INT, 0, GPIO_INPUT, GPIO_PULL_UP, GPIO_16MA),GPIO_ENABLE);
 	gpio_set_value(TOUCH_INT, 1);
 
 	msleep(300);

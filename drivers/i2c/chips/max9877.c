@@ -54,7 +54,7 @@ static void max9877_late_resume(struct early_suspend *h);
 #endif
 
 
-DECLARE_MUTEX(audio_sem);
+struct semaphore audio_sem;
 
 struct max9877_data {
 	struct work_struct work;
@@ -783,6 +783,8 @@ static int max9877_probe(struct i2c_client *client, const struct i2c_device_id *
 		err = -ENOMEM;
 		goto exit_alloc_data_failed;
 	}
+	
+	sema_init(&audio_sem, 1);
 
 	i2c_set_clientdata(client, mt);
 	max9877_init_client(client);
@@ -823,7 +825,6 @@ exit_check_functionality_failed:
 static int max9877_remove(struct i2c_client *client)
 {
 	struct max9877_data *mt = i2c_get_clientdata(client);
-	free_irq(client->irq, mt);
 	pclient = NULL;
 	misc_deregister(&max9877_device);
 	kfree(mt);

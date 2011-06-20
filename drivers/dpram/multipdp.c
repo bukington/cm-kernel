@@ -16,6 +16,7 @@
 #include <linux/delay.h>
 #include <linux/poll.h>
 #include <linux/miscdevice.h>
+#include <linux/semaphore.h>
 #include <linux/slab.h>
 #include <linux/netdevice.h>
 #include <linux/etherdevice.h>
@@ -324,8 +325,8 @@ struct pdp_info {
 
 /* PDP information table */
 static struct pdp_info *pdp_table[MAX_PDP_CONTEXT];
-static DECLARE_MUTEX(pdp_lock);
-static DECLARE_MUTEX(pdp_txlock);
+static DEFINE_SEMAPHORE(pdp_lock);
+static DEFINE_SEMAPHORE(pdp_txlock);
 
 /* DPRAM-related stuffs */
 static struct task_struct *dpram_task;
@@ -899,7 +900,7 @@ printk("========================>  vs_open : %s\n", tty->driver->name);
 	return 0;
 }
 
-static int vs_close(struct tty_struct *tty, struct file *filp)
+static void vs_close(struct tty_struct *tty, struct file *filp)
 {
 	
 	struct pdp_info *dev;
@@ -911,7 +912,6 @@ static int vs_close(struct tty_struct *tty, struct file *filp)
 	dev->vs_dev.tty = NULL;
 
 printk("========================>  vs_close : %s\n", tty->driver->name); 
-	return 0;
 }
 
 
@@ -1361,7 +1361,7 @@ static int pdp_activate(pdp_arg_t *pdp_arg, unsigned type, unsigned flags)
 		DPRINTK(1, "%s(id: %u) network device created\n", 
 			net->name, dev->id);
 	} else if (type == DEV_TYPE_SERIAL) {
-		init_MUTEX(&dev->vs_dev.write_lock);
+		sema_init(&dev->vs_dev.write_lock, 1);
 		strcpy(dev->vs_dev.tty_name, pdp_arg->ifname);
 
 		ret = vs_add_dev(dev);
@@ -1515,8 +1515,7 @@ static int pdp_adjust(const int adjust)
  * App. Interfece Device functions
  */
 
-static int multipdp_ioctl(struct inode *inode, struct file *file, 
-			      unsigned int cmd, unsigned long arg)
+static long multipdp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
 {
 	int ret, adjust;
 	pdp_arg_t pdp_arg;
@@ -1553,7 +1552,7 @@ static int multipdp_ioctl(struct inode *inode, struct file *file,
 
 static struct file_operations multipdp_fops = {
 	.owner =	THIS_MODULE,
-	.ioctl =	multipdp_ioctl,
+	.unlocked_ioctl =	multipdp_ioctl,
 	.llseek =	no_llseek,
 };
 
@@ -1621,6 +1620,9 @@ static int __init multipdp_init(void)
 #ifdef LOOP_BACK_TEST	
 	pdp_arg_t loopback_arg = { .id = 31, .ifname = "ttyLOBK", };
 #endif
+
+	sema_init(&pdp_lock, 1);
+	sema_init(&pdp_txlock, 1);
 
 	printk("[MULTI PDP] VERSION 3 (PDP_TX_FLAG Setting)\n");
 	/* run DPRAM I/O thread */

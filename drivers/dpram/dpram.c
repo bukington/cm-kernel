@@ -26,6 +26,7 @@
 #include <linux/delay.h>
 #include <linux/platform_device.h>
 #include <linux/mm.h>
+#include <linux/semaphore.h>
 
 #include <linux/tty.h>
 #include <linux/tty_driver.h>
@@ -193,7 +194,7 @@ struct class *onedram_class;
 #endif /* _ENABLE_ONEDRAM_DEVICE */
 
 // 2008.12.09.
-static DECLARE_MUTEX(write_mutex);
+static DEFINE_SEMAPHORE(write_mutex);
 struct wake_lock imei_wake_lock;
 struct wake_lock dpram_wake_lock;
 struct wake_lock silent_wake_lock;
@@ -986,13 +987,7 @@ static int dpram_tty_open(struct tty_struct *tty, struct file *file)
 
 		oldfs = get_fs(); set_fs(get_ds());
 
-		if (file->f_op->ioctl)
-		{
-			file->f_op->ioctl(file->f_dentry->d_inode, file,
-					TCGETA, (unsigned long)&termios);
-		}
-
-		else if (file->f_op->unlocked_ioctl)
+		if (file->f_op->unlocked_ioctl)
 		{
 			file->f_op->unlocked_ioctl(file, TCGETA, (unsigned long)&termios);
 		}
@@ -1008,13 +1003,7 @@ static int dpram_tty_open(struct tty_struct *tty, struct file *file)
 
 		oldfs = get_fs(); set_fs(get_ds());
 
-		if (file->f_op->ioctl)
-		{
-			file->f_op->ioctl(file->f_dentry->d_inode, file,
-					TCSETA, (unsigned long)&termios);
-		}
-
-		else if (file->f_op->unlocked_ioctl)
+		if (file->f_op->unlocked_ioctl)
 		{
 			file->f_op->unlocked_ioctl(file, TCSETA, (unsigned long)&termios);
 		}
@@ -1768,7 +1757,7 @@ static void init_devices(void)
 	int i;
 
 	for (i = 0; i < MAX_INDEX; i++) {
-		init_MUTEX(&dpram_table[i].serial.sem);
+		sema_init(&dpram_table[i].serial.sem, 1);
 
 		dpram_table[i].serial.open_count = 0;
 		dpram_table[i].serial.tty = NULL;

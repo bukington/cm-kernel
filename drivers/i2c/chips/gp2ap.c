@@ -320,8 +320,7 @@ static DEVICE_ATTR(show, S_IRUGO | S_IWUSR, sharp_gp2ap002_show, NULL);
 
 static DEVICE_ATTR(enable, S_IRUGO | S_IWUGO, sharp_gp2ap002_enable_show, sharp_gp2ap002_enable_store);
 
-static int gp2ap002_ioctl(struct inode *inode, struct file *filp,
-        unsigned int cmd, unsigned long arg)
+static long gp2ap002_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
 {
 	struct psensor_dev *dev = (struct psensor_dev *) _dev;
 	int val;
@@ -402,7 +401,7 @@ static struct file_operations gp2ap002_fops = {
 	.owner = THIS_MODULE,
 	.open = gp2ap002_open,
 	.release = gp2ap002_release,
-	.ioctl = gp2ap002_ioctl,
+	.unlocked_ioctl = gp2ap002_ioctl,
 };
 
 static struct miscdevice gp2ap002_dev = {
