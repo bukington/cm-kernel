@@ -1463,7 +1463,7 @@ static int battery_get_property(struct power_supply *psy,
 
 #define SEC_BATTERY_ATTR(_name)                                                 \
 {                                                                               \
-        .attr = { .name = #_name, .mode = 0777, .owner = THIS_MODULE },      \
+        .attr = { .name = #_name, .mode = 0777 },      \
         .show = battery_show_property,                                      \
         .store = battery_store_property,                                                          \
 }
@@ -1835,6 +1835,7 @@ static int battery_probe(struct platform_device *pdev)
 {
         int i;
         int rc = 0, r;
+	uint32_t config;
 
         /* init structure data member */
 	printk(KERN_INFO "Battery: probe\n");
@@ -1881,7 +1882,8 @@ static int battery_probe(struct platform_device *pdev)
         if (batt_info.rep.charging_enabled == 0)
                 battery_charging_ctrl(DISABLE);
         
-	r = gpio_tlmm_config(GPIO_CFG(107, 0, GPIO_INPUT, GPIO_PULL_UP, GPIO_2MA),GPIO_ENABLE);
+	config = PCOM_GPIO_CFG(107, 0, GPIO_INPUT, GPIO_PULL_UP, GPIO_2MA);
+	msm_proc_comm(PCOM_RPC_GPIO_TLMM_CONFIG_EX, &config, 0);
 	if(r<0)
 		printk(KERN_ERR "%s: TA_nCHG config failed\n", __FUNCTION__);
 
